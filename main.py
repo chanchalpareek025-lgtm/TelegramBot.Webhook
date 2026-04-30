@@ -22,8 +22,8 @@ bot_builder = (
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """ Sets the webhook for the Telegram Bot and manages its lifecycle (start/stop). """
-    await bot_builder.bot.setWebhook(url=WEBHOOK_DOMAIN)
+    """Sets webhook and manages bot lifecycle."""
+    await bot_builder.bot.setWebhook(url=f"{WEBHOOK_DOMAIN}/")
     async with bot_builder:
         await bot_builder.start()
         yield
@@ -35,22 +35,35 @@ app = FastAPI(lifespan=lifespan)
 
 @app.post("/")
 async def process_update(request: Request):
-    """ Handles incoming Telegram updates and processes them with the bot. """
+    """Handles incoming Telegram updates."""
     message = await request.json()
     update = Update.de_json(data=message, bot=bot_builder.bot)
     await bot_builder.process_update(update)
     return Response(status_code=HTTPStatus.OK)
 
 
+# ---------------- HANDLERS ---------------- #
+
 async def start(update: Update, _: ContextTypes.DEFAULT_TYPE):
-    """ Handles the /start command by sending a "Hello world!" message in response. """
-    await update.message.reply_text("Hello! 🍡 Send me a message and I'll echo it back to you")
+    """Handles the /start command."""
+    if update.message:
+        await update.message.reply_text(
+            "Hi kitts how are u 😊\n"
+            "I am your closest friend — you can talk to me anytime and feel good about yourself 🤗"
+        )
 
 
-async def echo(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
-    """Echo the user message."""
-    await update.message.reply_text(update.message.text)
+async def echo(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    """Handles all other messages."""
+    if update.message:
+        await update.message.reply_text(
+            "Hi kitts how are u 😄\n"
+            "I am a mini version of you… so technically I’m smarter than you already 😂\n"
+            "I am in progress for you and you will be surprised once I am ready to answer all your questions.\n"
+            "Stay tuned — I will let you know when I am ready 😉"
+        )
 
 
-bot_builder.add_handler(CommandHandler(command="start", callback=start))
-bot_builder.add_handler(MessageHandler(filters=filters.TEXT & ~filters.COMMAND, callback=echo))
+# Register handlers
+bot_builder.add_handler(CommandHandler("start", start))
+bot_builder.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
